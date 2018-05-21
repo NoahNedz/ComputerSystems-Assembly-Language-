@@ -1,0 +1,75 @@
+;Please do not modify this file!
+;The file contains internal information about the Processor Expert project generation
+[Options]
+ProjectName=
+ProjectDirectory=
+DestEventsDirectory=
+DestDriversSubDirectory=
+DestDocumentationDirectory=
+DestCompiledFilesSubDirectory=
+DestTemporaryDirectory=
+GenCpuDerivative=
+[GenFiles]
+LinkerFileGenerated=No
+MakefileGenerated=No
+GenSharedModules=0
+GenExtraFiles=0
+GenEventModules=0
+GenAllModules=0
+GenExternModules=0
+GenBeanModules=0
+SignalListFile=
+DestinationCompiler=MetrowerksHC12CC
+ProjectModificationStamp=2
+
+[1]
+Generated=No
+GenCompName=
+GenEventModule=
+HeaderAge=-1
+CodeAge=-1
+AsemblAge=-1
+GenNumMethods=14
+GetResetSource=No
+GetPllLockStatusFlag=No
+GetLowVoltageFlag=No
+Delay100US=No
+SetStopMode=No
+SetWaitMode=No
+DisableInt=No
+EnableInt=No
+GetIntVect=No
+SetIntVect=No
+GetSpeedMode=No
+SetSlowSpeed=No
+SetLowSpeed=No
+SetHighSpeed=No
+GenNumEvents=7
+OnReset_Selected=1
+OnReset_Name=Cpu_OnReset
+OnReset_Priority=interrupts disabled
+OnClockMonitorFail_Selected=1
+OnClockMonitorFail_Name=Cpu_OnClockMonitorFail
+OnClockMonitorFail_Priority=interrupts disabled
+OnIllegalOpcode_Selected=1
+OnIllegalOpcode_Name=Cpu_OnIllegalOpcode
+OnIllegalOpcode_Priority=interrupts disabled
+OnSwINT_Selected=1
+OnSwINT_Name=Cpu_OnSwINT
+OnSwINT_Priority=interrupts disabled
+OnLvdStatusChanged_Selected=1
+OnLvdStatusChanged_Name=Cpu_OnLvdStatusChanged
+OnLvdStatusChanged_Priority=interrupts disabled
+OnPllLockStatusChanged_Selected=1
+OnPllLockStatusChanged_Name=Cpu_OnPllLockStatusChanged
+OnPllLockStatusChanged_Priority=interrupts disabled
+OnSCMChanged_Selected=1
+OnSCMChanged_Name=Cpu_OnSCMChanged
+OnSCMChanged_Priority=interrupts disabled
+GenSmartUserChangesDetected_Header=No
+GenSmartUserChangesDetected_Code=No
+GenSmartUserChangesDetected_Asembl=No
+
+[UsedSrcFiles]
+
+[_end_]

@@ -1,0 +1,138 @@
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+    1    1                      ;*****************************************************************
+    2    2                      ;* This stationery serves as the framework for a                 *
+    3    3                      ;* user application (single file, absolute assembly application) *
+    4    4                      ;* For a more comprehensive program that                         *
+    5    5                      ;* demonstrates the more advanced functionality of this          *
+    6    6                      ;* processor, please see the demonstration applications          *
+    7    7                      ;* located in the examples subdirectory of the                   *
+    8    8                      ;* Freescale CodeWarrior for the HC12 Program directory          *
+    9    9                      ;*****************************************************************
+   10   10                      
+   11   11                      ; export symbols
+   12   12                                  XDEF Entry, _Startup            ; export 'Entry' symbol
+   13   13                                  ABSENTRY Entry        ; for absolute assembly: mark this as application entry point
+   14   14                      
+   15   15                      
+   16   16                      
+   17   17                      ; Include derivative-specific definitions 
+   18   18                      ;		INCLUDE 'derivative.inc' 
+   19   19                      
+   20   20          0000 0800   RAMStart    EQU  $0800
+   21   21          0000 4000   ROMStart    EQU  $4000  ; absolute address to place my code/constant data
+   22   22                      
+   23   23                      ; variable/data section
+   24   24                      
+   25   25                                  ORG RAMStart
+   26   26                      
+   27   27                      ; code section
+   28   28                                  
+   29   29                      
+   30   30  a000800 9050 A000   samples     DC.B  $90,$50,$A0,$00,$20,$CC,$88,$77
+             000804 20CC 8877  
+   31   31  a000808             nelements   DS.B  8 ;negative numbers
+   32   32  a000810             psum        DS.B  1 ;positive sum
+   33   33  a000811             pnumber     DS.B  1 ;number of positive numbers
+   34   34  a000812 00          pincrement  DC.B  $00
+   35   35  a000813 08          counter     DC.B  $08 ;813
+   36   36                      
+   37   37                      
+   38   38                      
+   39   39                      
+   40   40                      
+   41   41                      
+   42   42                      
+   43   43                      
+   44   44                      
+   45   45                      
+   46   46                         
+   47   47                      
+   48   48                      
+   49   49                      ; code section
+   50   50                                  ORG   ROMStart
+   51   51                      
+   52   52                      Entry:
+   53   53                      _Startup:            
+   54   54                                        
+   55   55                       
+   56   56  a004000 CE08 00               ldx #samples
+   57   57  a004003 E600                  ldab x ; current val
+   58   58  a004005 CD08 08                 ldy #nelements
+   59   59                                  
+   60   60                                  
+   61   61  a004008 8600                    ldaa #$00  ;sum
+   62   62                                  
+   63   63                                  
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+   64   64                                  
+   65   65                                  
+   66   66  a00400A 2000                    BRA whileLoop 
+   67   67                                  
+   68   68                                                       
+   69   69                                         
+   70   70                      whileLoop:   
+   71   71  a00400C E630                   ldab 1,x+         
+   72   72                                 
+   73   73  a00400E F708 13                TST $813 ; check to see if end of array
+   74   74  a004011 2F1B                   BLE done
+   75   75                                 
+   76   76  a004013 7308 13                DEC $813
+   77   77                                 
+   78   78                                 
+   79   79                                 
+   80   80  a004016 D7                     TSTB
+   81   81  a004017 2D0F                   BLT neg ;repeat if neg
+   82   82                                 
+   83   83  a004019 D7                     TSTB
+   84   84  a00401A 2710                   BEQ zero
+   85   85                                 
+   86   86                                 
+   87   87                                 
+   88   88                                 ;if positive
+   89   89                                 
+   90   90  a00401C 7208 11                INC $811; add one to positive number val
+   91   91  a00401F 1806                   ABA    ;add b to a
+   92   92                                 
+   93   93                                 
+   94   94                                 
+   95   95  a004021 F708 13                TST $813
+   96   96  a004024 2CE6                   BGE whileLoop
+   97   97                                 
+   98   98  a004026 2006                   BRA done
+   99   99                                 
+  100  100                                 ;when a is less than 0 end 
+  101  101                               
+  102  102                      neg:         
+  103  103  a004028 6B70                    stab 1,y+ 
+  104  104                                   
+  105  105                                     
+  106  106  a00402A 20E0                    BRA whileLoop 
+  107  107                                 
+  108  108                      
+  109  109  a00402C 20DE        zero:       BRA whileLoop
+  110  110                      
+  111  111                      
+  112  112                      done:      
+  113  113                                              
+  114  114  a00402E 7A08 10                 staa psum
+  115  115  a004031 3D                      RTS  
+  116  116                      
+  117  117                                              
+  118  118                                  
+  119  119                        
+  120  120                      
+  121  121                      ;**************************************************************
+  122  122                      ;*                 Interrupt Vectors                          *
+  123  123                      ;**************************************************************
+  124  124                                  ORG   $FFFE
+  125  125  a00FFFE 4000                    DC.W  Entry           ; Reset Vector

@@ -1,0 +1,248 @@
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+    1    1                      ;*****************************************************************
+    2    2                      ;* This stationery serves as the framework for a                 *
+    3    3                      ;* user application (single file, absolute assembly application) *
+    4    4                      ;* For a more comprehensive program that                         *
+    5    5                      ;* demonstrates the more advanced functionality of this          *
+    6    6                      ;* processor, please see the demonstration applications          *
+    7    7                      ;* located in the examples subdirectory of the                   *
+    8    8                      ;* Freescale CodeWarrior for the HC12 Program directory          *
+    9    9                      ;*****************************************************************
+   10   10                      
+   11   11                      ; export symbols
+   12   12                              XDEF Entry, _Startup           ; export 'Entry' symbol
+   13   13                              ABSENTRY Entry        ; for absolute assembly: mark this as application entry point
+   14   14                      
+   15   15                      
+   16   16                      
+   17   17                      ; Include derivative-specific definitions 
+   18   18                      		;INCLUDE 'derivative.inc' 
+   19   19                      
+   20   20          0000 4000   ROMStart    EQU  $4000  ; absolute address to place my code/constant data
+   21   21          0000 0800   RAMStart    EQU  $0800
+   22   22          0000 2000   STACK       EQU  $2000  ;stack
+   23   23          0000 0000   PortA       EQU  $0000
+   24   24          0000 0001   PortB       EQU  1
+   25   25          0000 0008   PortE       EQU  8
+   26   26          0000 0002   DDRA        EQU  $0002
+   27   27          0000 0003   DDRB        EQU  $0003
+   28   28          0000 0009   DDRE        EQU  $0009
+   29   29          0000 001E   INTCR       EQU  $001E
+   30   30                      
+   31   31                      
+   32   32                      
+   33   33                      ; variable/data section
+   34   34                      
+   35   35                                  ORG RAMStart
+   36   36                       ; Insert here your data definition.
+   37   37  a000800             LEDS        DS.B 1  ;800
+   38   38  a000801             Initial     DS.B 2;801,802 ;801 is what the max min looks at,store val in this
+   39   39  a000803 00          timer       DC.B 0 ;803
+   40   40  a000804 00          lMax        DC.B 0 ;804 
+   41   41  a000805 00          lMin        DC.B 0 ;805
+   42   42  a000806 00          arrayVal    DC.B 0 ;806
+   43   43  a000807 00          counter     DC.B 0 ;807 not used
+   44   44                      
+   45   45  a000808 FF          timer1      DC.B $FF ;808
+   46   46  a000809 FF          timer2      DC.B $FF ;809
+   47   47  a00080A 20          timer3      DC.B $20  ;80A
+   48   48                      
+   49   49  a00080B FF          refT1       DC.B $FF  ;80B
+   50   50  a00080C 20          refT2       DC.B $20  ;80C
+   51   51                      
+   52   52  a00080D             KEYS        DS.B 20   ;80D
+   53   53                      
+   54   54                      
+   55   55                      
+   56   56                      
+   57   57                      
+   58   58                      ; code section
+   59   59                                  ORG   ROMStart
+   60   60                      Entry:
+   61   61                      _Startup:
+   62   62                                  
+   63   63                                  
+   64   64                      
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+   65   65                      main:                   
+   66   66                                  ORG   ROMStart
+   67   67  a004000 CF20 00                 lds   #STACK
+   68   68  a004003 CE08 01                 ldx   #$801
+   69   69  a004006 180B 4000               MovB  #$40,INTCR
+             00400A 1E         
+   70   70  a00400B 180B FF00               movb  #$FF,DDRA
+             00400F 02         
+   71   71                                  ;movb  #$FF,DDRB  ;these are inputs
+   72   72                                  ;movb  #$FF,DDRE            
+   73   73                                  
+   74   74                      waits:      
+   75   75  a004010 10EF                    cli
+   76   76  a004012 3E                      wai
+   77   77                                  
+   78   78                                  
+   79   79  a004013 E600                    ldab  0,x 
+   80   80  a004015 7B08 06                 stab $0806
+   81   81  a004018 1640 2B                 jsr find_maxmin ;b contains the key value
+   82   82  a00401B 8600                    ldaa #$00
+   83   83  a00401D 7A08 03                 staa $803           
+   84   84  a004020 8601                    ldaa #$01
+   85   85  a004022 F608 06                 ldab $806           
+   86   86  a004025 1640 4B                 jsr update_leds  
+   87   87                                  
+   88   88  a004028 20E6                    bra waits 
+   89   89  a00402A 3D                      rts
+   90   90                                  
+   91   91                                  
+   92   92                      find_maxmin:  
+   93   93                                  
+   94   94  a00402B C103                    cmpb #$03
+   95   95  a00402D 230F                    bls less       
+   96   96  a00402F 8607                    ldaa #$07
+   97   97  a004031 7A08 04                 staa $804
+   98   98  a004034 1816                    sba           
+   99   99  a004036 B781                    exg a,b 
+  100  100  a004038 1816                    sba  
+  101  101  a00403A 7A08 05                 staa $805      
+  102  102  a00403D 3D                      rts
+  103  103                                          
+  104  104                      less:    
+  105  105  a00403E 180F                    tba 
+  106  106  a004040 1806                    aba 
+  107  107  a004042 7A08 04                 staa $804
+  108  108  a004045 8600                    ldaa #$0
+  109  109  a004047 7A08 05                 staa $805 
+  110  110  a00404A 3D                      rts 
+  111  111                                
+  112  112                      update_leds:  
+  113  113                       
+  114  114                      base_num:        
+  115  115                              
+  116  116  a00404B F108 03                 cmpb $803
+  117  117  a00404E 2F06                    ble first
+  118  118  a004050 48                      asla 
+  119  119  a004051 7208 03                 inc $803   
+  120  120  a004054 20F5                    bra base_num  
+  121  121                              
+  122  122                      
+  123  123                      first:                    ;stores the inputed number to be displayed
+  124  124  a004056 7A08 00                 staa $800
+  125  125  a004059 180C 0800               movb $800,$000
+             00405D 0000       
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  126  126  a00405F 1640 C9                 jsr delay
+  127  127  a004062 2000                    bra max
+  128  128                              
+  129  129                      max: 
+  130  130                                               ;goes to max
+  131  131  a004064 F608 04                 ldab $804 
+  132  132  a004067 F108 03                 cmpb $803
+  133  133  a00406A 2F11                    ble back_2_base      
+  134  134  a00406C 7808 00                 asl $800
+  135  135  a00406F 180C 0800               movb $800,$000
+             004073 0000       
+  136  136  a004075 1640 C9                 jsr delay        
+  137  137  a004078 7208 03                 inc $803
+  138  138  a00407B 20E7                    bra max
+  139  139                      
+  140  140                      back_2_base:          ;goes to inputed number
+  141  141  a00407D F608 06                 ldab $806 
+  142  142  a004080 F108 03                 cmpb $803
+  143  143  a004083 2C11                    bge  min
+  144  144  a004085 7408 00                 lsr $800
+  145  145  a004088 180C 0800               movb $800,$000
+             00408C 0000       
+  146  146  a00408E 1640 C9                 jsr delay
+  147  147  a004091 7308 03                 dec $803
+  148  148  a004094 20E7                    bra back_2_base
+  149  149                              
+  150  150                      min:                  ;goes to min value
+  151  151  a004096 F608 05                 ldab $805        
+  152  152  a004099 F108 03                 cmpb $803
+  153  153  a00409C 2C11                    bge  back_2_base1 
+  154  154  a00409E 7708 00                 asr $800
+  155  155  a0040A1 180C 0800               movb $800,$000
+             0040A5 0000       
+  156  156  a0040A7 1640 C9                 jsr delay
+  157  157  a0040AA 7308 03                 dec $803
+  158  158  a0040AD 20E7                    bra min    
+  159  159                      
+  160  160                      back_2_base1:         ;brings back to the inputed number
+  161  161  a0040AF F608 06                 ldab $806 
+  162  162  a0040B2 F108 03                 cmpb $803
+  163  163  a0040B5 2F11                    ble  done
+  164  164  a0040B7 7808 00                 asl $800
+  165  165  a0040BA 180C 0800               movb $800,$000
+             0040BE 0000       
+  166  166  a0040C0 1640 C9                 jsr delay
+  167  167  a0040C3 7208 03                 inc $803
+  168  168  a0040C6 20E7                    bra back_2_base1
+  169  169                             
+  170  170                                  
+  171  171  a0040C8 3D          done:       rts
+  172  172                      
+  173  173                      
+  174  174  a0040C9 7308 08     delay:      dec timer1 ; delays 2 second 32(255^2)= 2,080,800
+  175  175  a0040CC F708 08                 tst timer1
+  176  176  a0040CF 26F8                    bne delay
+  177  177                                  ;next 255
+  178  178  a0040D1 180C 080B               movb  refT1,timer1
+             0040D5 0808       
+  179  179  a0040D7 7308 09                 dec timer2
+  180  180  a0040DA 26ED                    bne delay
+  181  181  a0040DC 180C 080B               movb  refT1,timer2;resets the 255 counter
+             0040E0 0809       
+  182  182                                  ;jsr delay2
+  183  183                                  
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  184  184  a0040E2 7308 0A                 dec timer3
+  185  185  a0040E5 F708 0A                 tst timer3
+  186  186  a0040E8 26DF                    bne delay
+  187  187                                  
+  188  188  a0040EA 180C 080C               movb refT2,timer3 ;resets the 16 counter
+             0040EE 080A       
+  189  189  a0040F0 3D                      rts
+  190  190                                  
+  191  191                       key_isr:
+  192  192                                  ;this never gets called because the keyboard never triggers interrupt :(
+  193  193  a0040F1 D601                    ldab PortB
+  194  194  a0040F3 7B08 01                 stab $801
+  195  195  a0040F6 1640 C9                 jsr delay
+  196  196                                  
+  197  197  a0040F9 0B                      rti          
+  198  198                                  
+  199  199                                             
+  200  200                                  
+  201  201                                  
+  202  202                                  
+  203  203                                  
+  204  204                                  
+  205  205                                       
+  206  206                                         
+  207  207                      
+  208  208                      ;**************************************************************
+  209  209                      ;*                 Interrupt Vectors                          *
+  210  210                      ;**************************************************************
+  211  211                                  ORG   $FFFE
+  212  212  a00FFFE 4000                    DC.W  Entry
+  213  213                                  ORG   $FFF2
+  214  214  a00FFF2 40F1                    DC.W  key_isr          ; Reset Vector

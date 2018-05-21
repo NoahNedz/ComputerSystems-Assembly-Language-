@@ -1,0 +1,476 @@
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+    1    1                      ;*****************************************************************
+    2    2                      ;* This stationery serves as the framework for a                 *
+    3    3                      ;* user application (single file, absolute assembly application) *
+    4    4                      ;* For a more comprehensive program that                         *
+    5    5                      ;* demonstrates the more advanced functionality of this          *
+    6    6                      ;* processor, please see the demonstration applications          *
+    7    7                      ;* located in the examples subdirectory of the                   *
+    8    8                      ;* Freescale CodeWarrior for the HC12 Program directory          *
+    9    9                      ;*****************************************************************
+   10   10                      
+   11   11                      ; export symbols
+   12   12                                  XDEF Entry, _Startup            ; export 'Entry' symbol
+   13   13                                  ABSENTRY Entry        ; for absolute assembly: mark this as application entry point
+   14   14                      
+   15   15                      
+   16   16                      
+   17   17                      ; Include derivative-specific definitions 
+   18   18                      		;INCLUDE 'derivative.inc' 
+   19   19                      
+   20   20          0000 4000   ROMStart    EQU  $4000
+   21   21          0000 0800   RAMStart    EQU  $800
+   22   22          0000 2000   Stack       EQU  $2000
+   23   23          0000 0000   PortA       EQU  0
+   24   24          0000 0001   PortB       EQU  1
+   25   25          0000 0008   PortE       EQU  8
+   26   26          0000 0002   DDRA        EQU  2
+   27   27          0000 001E   INTCR       EQU  $001E
+   28   28          0000 0004   Col         EQU  4
+   29   29          0000 0005   Row         EQU  5
+   30   30          0000 0040   IRQEN       EQU  $40 
+   31   31          0000 0080   bit         EQU  %10000000
+   32   32          0000 0046   TSCR1       EQU  $0046
+   33   33          0000 004F   TFLG2       EQU  $004F
+   34   34                      
+   35   35                      
+   36   36                      
+   37   37                      ; variable/data section
+   38   38                      
+   39   39                                  ORG RAMStart
+   40   40                       ; Insert here your data definition.
+   41   41  a000800             KEYS        DS.B  1
+   42   42  a000801             LEDS        DS.B 1  ;800
+   43   43                      
+   44   44  a000802 00          timer       DC.B 0 
+   45   45  a000803 00          lMax        DC.B 0  
+   46   46  a000804 00          lMin        DC.B 0 
+   47   47  a000805 00          arrayVal    DC.B 0 
+   48   48                      
+   49   49  a000806             pressed     DS.B  1
+   50   50  a000807             colNumber   DS.B  1
+   51   51  a000808             rowNumber   DS.B  1
+   52   52  a000809 FEFD FBF7   Mask        DC.B  $FE,$FD,$FB,$F7,$E7
+             00080D E7         
+   53   53  a00080E 0001 0203   Vals        DC.B  $00,$01,$02,$03,$04,$05,$06,$07,$08,$08,$09
+             000812 0405 0607  
+             000816 0808 09    
+   54   54  a000819 01          Iteration   DC.B  $01
+   55   55  a00081A FF          timer1      DC.B $FF 
+   56   56  a00081B FF          timer2      DC.B $FF 
+   57   57  a00081C 20          timer3      DC.B $20
+   58   58                      
+   59   59                      
+   60   60  a00081D FF          refT1       DC.B $FF  
+   61   61  a00081E 26          refT2       DC.B $26
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+   62   62  a00081F 00          replay      DC.B $0
+   63   63  a000820 00          baseVal     DC.B $0  
+   64   64  a000821 01          multi       DC.B $1
+   65   65  a000822 0C          last        DC.B $0C
+   66   66  a000823 0000        states      DC.W $0000
+   67   67  a000825 0002        location    DC.W $0002
+   68   68  a000827 1F          NTOF        DC.B 31
+   69   69  a000828 00          cycles      DC.B $0
+   70   70                      
+   71   71                                  ORG   ROMStart
+   72   72                      
+   73   73                      
+   74   74  a004000 CF20 00     Entry:       lds  #Stack
+   75   75                      _Startup:    
+   76   76  a004003 180B F000                movb  #$F0, PortE
+             004007 08         
+   77   77  a004008 4C1E 40                  bset  INTCR, IRQEN
+   78   78                                   
+   79   79  a00400B 10EF                     cli
+   80   80                                   
+   81   81                      main:       
+   82   82  a00400D 3E                      wai
+   83   83                                  
+   84   84                      loop:       
+   85   85  a00400E 10EF                    cli       
+   86   86  a004010 F608 00                 ldab KEYS
+   87   87  a004013 C10C                    cmpb #$0C
+   88   88  a004015 2745                    beq  restart
+   89   89                                  
+   90   90                                  
+   91   91  a004017 FD08 23                 ldy states
+   92   92  a00401A 8D00 01                 cpy #$01
+   93   93  a00401D 274F                    beq wait
+   94   94                                  
+   95   95  a00401F FD08 23                 ldy states
+   96   96  a004022 8D00 03                 cpy #$03
+   97   97  a004025 274A                    beq go2
+   98   98                                  
+   99   99                                  
+  100  100                                  
+  101  101  a004027 CD00 01                 ldy #$0001
+  102  102  a00402A 1820 00D4               lbra delay
+  103  103                       d1:                  
+  104  104  a00402E 180C 0800               movb KEYS,timer
+             004032 0802       
+  105  105  a004034 2003                    bra max
+  106  106  a004036 20D6                    bra loop  
+  107  107  a004038 3D                      rts
+  108  108                                  
+  109  109                      max:          ;goes to max
+  110  110  a004039 1803 0001               movw #$0001,location
+             00403D 0825       
+  111  111  a00403F F608 03                 ldab lMax 
+  112  112  a004042 F108 02                 cmpb timer
+  113  113  a004045 2F43                    ble back_2_base      
+  114  114  a004047 7808 01                 asl LEDS
+  115  115  a00404A 180C 0801               movb LEDS,$000
+             00404E 0000       
+  116  116                                  
+  117  117  a004050 CD00 02                 ldy #$02
+  118  118  a004053 1820 00AB               lbra delay
+  119  119                      d2:                
+  120  120  a004057 7208 02                 inc timer
+  121  121  a00405A 20DD                    bra max
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  122  122                      
+  123  123  a00405C 180B 0008   restart:    movb #$00,states
+             004060 23         
+  124  124  a004061 180B 0008               movb #$00,LEDS
+             004065 01         
+  125  125  a004066 180C 0801               movb LEDS,$000
+             00406A 0000       
+  126  126  a00406C 209F                    bra main
+  127  127                      
+  128  128  a00406E 3E          wait:       wai
+  129  129  a00406F 209D                    bra loop
+  130  130                      
+  131  131                      go2:        
+  132  132  a004071 FD08 25                 ldy location
+  133  133                                  
+  134  134  a004074 8D00 01                 cpy #$0001
+  135  135  a004077 27C0                    beq max
+  136  136  a004079 8D00 02                 cpy #$0002
+  137  137  a00407C 270C                    beq back_2_base
+  138  138  a00407E 8D00 03                 cpy #$0003
+  139  139  a004081 272A                    beq min
+  140  140  a004083 8D00 04                 cpy #$0004
+  141  141  a004086 2748                    beq back_2_base1 
+  142  142  a004088 20AF                    bra max
+  143  143                      
+  144  144                      back_2_base:          ;goes to inputed number
+  145  145  a00408A 1803 0002               movw #$0002,location
+             00408E 0825       
+  146  146  a004090 F608 05                 ldab arrayVal 
+  147  147  a004093 F108 02                 cmpb timer
+  148  148  a004096 2C15                    bge  min
+  149  149  a004098 7408 01                 lsr LEDS
+  150  150  a00409B 180C 0801               movb LEDS,$000
+             00409F 0000       
+  151  151  a0040A1 CD00 03                 ldy #$03
+  152  152  a0040A4 7308 02                 dec timer
+  153  153  a0040A7 1820 0057               lbra delay
+  154  154                      d3:            
+  155  155                                  
+  156  156  a0040AB 20DD                    bra back_2_base
+  157  157                              
+  158  158                      min:                  ;goes to min value
+  159  159  a0040AD 1803 0003               movw #$0003,location
+             0040B1 0825       
+  160  160  a0040B3 F608 04                 ldab lMin        
+  161  161  a0040B6 F108 02                 cmpb timer
+  162  162  a0040B9 2C15                    bge  back_2_base1;
+  163  163  a0040BB 7708 01                 asr LEDS
+  164  164  a0040BE 180C 0801               movb LEDS,$000
+             0040C2 0000       
+  165  165  a0040C4 CD00 04                 ldy #$04
+  166  166  a0040C7 7308 02                 dec timer
+  167  167  a0040CA 1820 0034               lbra delay
+  168  168                      d4:            
+  169  169                                  
+  170  170  a0040CE 20DD                    bra min    
+  171  171                      
+  172  172                      back_2_base1:         
+  173  173  a0040D0 1803 0004               movw #$0004,location
+             0040D4 0825       
+  174  174  a0040D6 F608 05                 ldab arrayVal 
+  175  175  a0040D9 F108 02                 cmpb timer
+  176  176  a0040DC 2F15                    ble  reset  
+  177  177  a0040DE 7808 01                 asl LEDS
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  178  178  a0040E1 180C 0801               movb LEDS,$000
+             0040E5 0000       
+  179  179  a0040E7 CD00 05                 ldy #$05
+  180  180  a0040EA 7208 02                 inc timer
+  181  181                               
+  182  182  a0040ED 1820 0011               lbra delay
+  183  183                       d5:           
+  184  184                                  
+  185  185  a0040F1 20DD                    bra back_2_base1
+  186  186                      
+  187  187                      reset:                 
+  188  188  a0040F3 1803 0000               movw #$0000,states
+             0040F7 0823       
+  189  189  a0040F9 8601                    ldaa #$01            
+  190  190  a0040FB F608 00                 ldab KEYS
+  191  191  a0040FE 1820 FF37               lbra max                       
+  192  192                      
+  193  193                                  
+  194  194  a004102 180B 8000   delay:      movb #bit,TSCR1
+             004106 46         
+  195  195  a004107 180B 8000               movb #bit,TFLG2
+             00410B 4F         
+  196  196  a00410C B608 28                 ldaa cycles
+  197  197  a00410F 4F4F 80FC   spin:       brclr TFLG2,$80,spin
+  198  198  a004113 180B 8000               movb  #bit, TFLG2
+             004117 4F         
+  199  199  a004118 0430 F4                 dbne  a,spin
+  200  200  a00411B 8D00 01                 cpy #$0001
+  201  201  a00411E 1827 FF0C               lbeq d1
+  202  202  a004122 8D00 02                 cpy #$0002
+  203  203  a004125 1827 FF2E               lbeq d2
+  204  204  a004129 8D00 03                 cpy #$0003
+  205  205  a00412C 1827 FF7B               lbeq d3
+  206  206  a004130 8D00 04                 cpy #$0004
+  207  207  a004133 1827 FF97               lbeq d4
+  208  208  a004137 8D00 05                 cpy #$0005
+  209  209  a00413A 1827 FFB3               lbeq d5
+  210  210  a00413E 3D                      rts                              
+  211  211                                  
+  212  212                                   
+  213  213                                                                   
+  214  214                      
+  215  215                      
+  216  216                      KEY_ISR     
+  217  217  a00413F C7                      clrb
+  218  218  a004140 CE08 09                 ldx #Mask
+  219  219  a004143 180D 3000   start:      movb  1,x+, PortE; puts mask into portB to open it up, we are itterating through Rows
+             004147 08         
+  220  220  a004148 9601                    ldaa  PortB ;read the  row
+  221  221  a00414A 81FF                    cmpa  #$FF
+  222  222  a00414C 2607                    bne   row
+  223  223  a00414E 52                      incb
+  224  224  a00414F C104                    cmpb  #Col
+  225  225  a004151 2DF0                    blt   start
+  226  226  a004153 2715                    beq   return_ISR
+  227  227  a004155 7B08 07     row:        stab  colNumber ;stores the col number
+  228  228  a004158 C7                      clrb
+  229  229  a004159 CE08 09                 ldx   #Mask ;resets the column for the next input
+  230  230                      
+  231  231  a00415C A130        cont:       cmpa  1,x+
+  232  232  a00415E 2704                    beq   arr
+  233  233  a004160 CB04                    addb  #Col
+  234  234  a004162 20F8                    bra cont 
+  235  235  a004164 FB08 07     arr:        addb  colNumber
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  236  236  a004167 7B08 06                 stab  pressed          
+  237  237                      
+  238  238  a00416A 180B F000   return_ISR  movb  #$F0,PortE
+             00416E 08         
+  239  239  a00416F 180B FF00               movb  #$FF,DDRA   
+             004173 02         
+  240  240                       
+  241  241                                  
+  242  242  a004174 F608 06                 ldab pressed
+  243  243                                  
+  244  244                                  
+  245  245  a004177 FD08 23                 ldy states
+  246  246  a00417A 8D00 01                 cpy #$0001
+  247  247  a00417D 1827 0083               lbeq controls
+  248  248                                  
+  249  249  a004181 C10D                    cmpb #$0D
+  250  250  a004183 1827 00F3               lbeq rip1
+  251  251  a004187 C108                    cmpb #$08
+  252  252  a004189 1827 008B               lbeq stopWithout
+  253  253  a00418D C109                    cmpb #$09
+  254  254  a00418F 1827 0085               lbeq stopWithout
+  255  255  a004193 C10A                    cmpb #$0A
+  256  256  a004195 1827 007F               lbeq stopWithout
+  257  257  a004199 C10B                    cmpb #$0B
+  258  258  a00419B 1827 0079               lbeq stopWithout
+  259  259  a00419F C10F                    cmpb #$0F
+  260  260  a0041A1 1827 0073               lbeq stopWithout
+  261  261  a0041A5 C10C                    cmpb #$0C
+  262  262  a0041A7 1827 006D               lbeq stopWithout
+  263  263                                  
+  264  264                                  
+  265  265                                  
+  266  266                                  
+  267  267  a0041AB C10E                    cmpb #$0E
+  268  268  a0041AD 1827 0067               lbeq stopWithout
+  269  269                                 
+  270  270                      
+  271  271                       ends2:           
+  272  272  a0041B1 1803 0000               movw #$0000,states
+             0041B5 0823       
+  273  273  a0041B7 180C 0806               movb pressed,KEYS
+             0041BB 0800       
+  274  274  a0041BD 180C 0800               movb KEYS,arrayVal
+             0041C1 0805       
+  275  275  a0041C3 180C 0800               movb KEYS,last     
+             0041C7 0822       
+  276  276  a0041C9 180B 0008               movb #$00,timer
+             0041CD 02         
+  277  277  a0041CE 180B 0008               movb #$00,LEDS
+             0041D2 01         
+  278  278  a0041D3 180B 0008               movb #$00,lMin
+             0041D7 04         
+  279  279  a0041D8 180B 0008               movb #$00,lMax
+             0041DC 03         
+  280  280  a0041DD 180B 0008               movb #$00,LEDS
+             0041E1 01         
+  281  281  a0041E2 180B 0008               movb #$00,baseVal
+             0041E6 20         
+  282  282  a0041E7 F608 00                 ldab KEYS           
+  283  283                                  
+  284  284  a0041EA C104                    cmpb #$4
+  285  285  a0041EC 272B                    beq set1
+  286  286  a0041EE C103                    cmpb #$3
+  287  287  a0041F0 2727                    beq set1
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  288  288  a0041F2 C106                    cmpb #$6
+  289  289  a0041F4 272A                    beq set2
+  290  290  a0041F6 C101                    cmpb #$1
+  291  291  a0041F8 2726                    beq set2
+  292  292  a0041FA C105                    cmpb #$5
+  293  293  a0041FC 2729                    beq set3
+  294  294  a0041FE C102                    cmpb #$2
+  295  295  a004200 2725                    beq set3
+  296  296  a004202 202A                    bra step
+  297  297                                  
+  298  298  a004204 C10D        controls:   cmpb #$0D
+  299  299  a004206 1827 0070               lbeq rip1
+  300  300                                  
+  301  301  a00420A C10E                    cmpb #$0E
+  302  302  a00420C 1827 0077               lbeq rip2
+  303  303  a004210 C10C                    cmpb #$0C
+  304  304  a004212 1827 FF9B               lbeq ends2
+  305  305                                  
+  306  306                                  
+  307  307  a004216 2062                    bra rip1
+  308  308  a004218 0B          stopWithout:  rti                              
+  309  309                                
+  310  310  a004219 180B 3508   set1:       movb #$35,cycles
+             00421D 28         
+  311  311  a00421E 200E                    bra step
+  312  312  a004220 180B 9108   set2:       movb #$91,cycles
+             004224 28         
+  313  313                                  
+  314  314  a004225 2007                    bra step
+  315  315  a004227 180B 6308   set3:       movb #$63,cycles                                    
+             00422B 28         
+  316  316                                  
+  317  317  a00422C 2000                    bra step
+  318  318                                  
+  319  319  a00422E C103        step:       cmpb #$03
+  320  320  a004230 2310                    bls less1       
+  321  321  a004232 8607                    ldaa #$07
+  322  322  a004234 7A08 03                 staa lMax
+  323  323  a004237 1816                    sba           
+  324  324  a004239 B781                    exg a,b 
+  325  325  a00423B 1816                    sba  
+  326  326  a00423D 7A08 04                 staa lMin      
+  327  327  a004240 200C                    bra base_num3                   
+  328  328                      less1:    
+  329  329  a004242 180F                    tba 
+  330  330  a004244 1806                    aba 
+  331  331  a004246 7A08 03                 staa lMax
+  332  332  a004249 8600                    ldaa #$0
+  333  333  a00424B 7A08 04                 staa lMin 
+  334  334                                  
+  335  335  a00424E 8600        base_num3:   ldaa #$00
+  336  336  a004250 7A08 02                 staa timer           
+  337  337  a004253 8601                    ldaa #$01
+  338  338  a004255 F608 06                 ldab pressed            
+  339  339                                          
+  340  340  a004258 F108 02     base_num4:  cmpb timer
+  341  341  a00425B 2F06                    ble base5
+  342  342  a00425D 48                      asla 
+  343  343  a00425E 7208 02                 inc timer   
+  344  344  a004261 20F5                    bra base_num4      
+  345  345                      
+  346  346  a004263 7A08 20     base5:      staa baseVal
+  347  347  a004266 180C 0820               movb baseVal,LEDS
+             00426A 0801       
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+  348  348  a00426C 180C 0801               movb LEDS,$000
+             004270 0000       
+  349  349                                 
+  350  350                                  
+  351  351  a004272 1803 400E               movw #$400E,$1FFE
+             004276 1FFE       
+  352  352  a004278 201A                    bra ends    
+  353  353                      
+  354  354                      rip1:       ;
+  355  355  a00427A 1803 400E               movw #$400E,$1FFE
+             00427E 1FFE       
+  356  356  a004280 1803 0001               movw #$0001,states
+             004284 0823       
+  357  357  a004286 0B                      rti
+  358  358                                  
+  359  359                      
+  360  360  a004287 1803 400E   rip2:       movw #$400E,$1FFE
+             00428B 1FFE       
+  361  361  a00428D 1803 0003               movw #$0003,states         
+             004291 0823       
+  362  362  a004293 0B                      rti     
+  363  363                      
+  364  364  a004294 1803 400E   ends:       movw #$400E,$1FFE
+             004298 1FFE       
+  365  365  a00429A 0B                      rti
+  366  366                      
+  367  367                      
+  368  368                      
+  369  369                      
+  370  370                      
+  371  371                                  
+  372  372                              
+  373  373                      
+  374  374                                  
+  375  375                      
+  376  376                      
+  377  377                      
+  378  378                      
+  379  379                      
+  380  380                                               
+  381  381                                               
+  382  382                      
+  383  383                      ;**************************************************************
+  384  384                      ;*                 Interrupt Vectors                          *
+  385  385                      ;**************************************************************
+  386  386                                  ORG   $FFFE
+  387  387  a00FFFE 4000                    DC.W  Entry           ; Reset Vector
+  388  388                                  ORG   $FFF2
+  389  389  a00FFF2 413F                    DC.W  KEY_ISR
+  390  390                                  

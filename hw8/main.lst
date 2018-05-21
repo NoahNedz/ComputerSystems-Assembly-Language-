@@ -1,0 +1,125 @@
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+    1    1                      ;*****************************************************************
+    2    2                      ;* This stationery serves as the framework for a                 *
+    3    3                      ;* user application (single file, absolute assembly application) *
+    4    4                      ;* For a more comprehensive program that                         *
+    5    5                      ;* demonstrates the more advanced functionality of this          *
+    6    6                      ;* processor, please see the demonstration applications          *
+    7    7                      ;* located in the examples subdirectory of the                   *
+    8    8                      ;* Freescale CodeWarrior for the HC12 Program directory          *
+    9    9                      ;*****************************************************************
+   10   10                      
+   11   11                      ; export symbols
+   12   12                                  XDEF Entry, _Startup            ; export 'Entry' symbol
+   13   13                                  ABSENTRY Entry        ; for absolute assembly: mark this as application entry point
+   14   14                      
+   15   15                      
+   16   16                      
+   17   17                      ; Include derivative-specific definitions 
+   18   18                      		;INCLUDE 'derivative.inc' 
+   19   19                      
+   20   20          0000 4000   ROMStart    EQU  $4000
+   21   21          0000 0800   RAMStart    EQU  $800
+   22   22          0000 2000   Stack       EQU  $2000
+   23   23          0000 0001   PortB       EQU  1
+   24   24          0000 0008   PortE       EQU  8
+   25   25          0000 001E   INTCR       EQU  $001E
+   26   26          0000 0004   Col         EQU  4
+   27   27          0000 0040   IRQEN       EQU   $40 
+   28   28                      
+   29   29                      
+   30   30                      
+   31   31                      ; variable/data section
+   32   32                      
+   33   33                                  ORG RAMStart
+   34   34                       ; Insert here your data definition.
+   35   35  a000800             KEYS        DS.B  20
+   36   36  a000814             pressed     DS.B  1
+   37   37  a000815             colNumber   DS.B  1
+   38   38  a000816 FEFD FBF7   Mask        DC.B  $FE,$FD,$FB,$F7,$EF
+             00081A EF         
+   39   39                      
+   40   40                      
+   41   41                      ; code section
+   42   42                                  ORG   ROMStart
+   43   43                      
+   44   44                      
+   45   45  a004000 CF20 00     Entry:       lds  #Stack
+   46   46  a004003 CD08 00     _Startup:    ldy  #KEYS
+   47   47  a004006 180B F000                movb  #$F0, PortE
+             00400A 08         
+   48   48  a00400B 4C1E 40                  bset  INTCR, IRQEN
+   49   49  a00400E 10EF                     cli
+   50   50                                   
+   51   51                      main:       
+   52   52  a004010 3E                      wai
+   53   53  a004011 1809 7008               movb pressed,1,y+
+             004015 14         
+   54   54  a004016 20F8                    bra main
+   55   55  a004018 3D                      rts
+   56   56                                  
+   57   57                                  
+   58   58  a004019 8640        delay      ldaa #$40
+   59   59  a00401B CEFF FF     first:      ldx  #$FFFF
+   60   60  a00401E 0435 FA     second:      dbne x, first
+   61   61  a004021 0430 FA                 dbne a, second
+
+Freescale HC12-Assembler 
+(c) Copyright Freescale 1987-2010
+
+ Abs. Rel.   Loc    Obj. code   Source line
+ ---- ----   ------ ---------   -----------
+   62   62  a004024 3D                      rts
+   63   63                      
+   64   64                      
+   65   65  a004025 C7          KEY_ISR     clrb
+   66   66  a004026 CE08 16                 ldx #Mask
+   67   67  a004029 180D 3000   start:      movb  1,x+, PortE
+             00402D 08         
+   68   68  a00402E 9601                    ldaa  PortB
+   69   69  a004030 81FF                    cmpa  #$FF
+   70   70  a004032 2607                    bne   column
+   71   71  a004034 52                      incb
+   72   72  a004035 C104                    cmpb  #Col
+   73   73  a004037 2DF0                    blt   start
+   74   74  a004039 2715                    beq   return_ISR
+   75   75                      
+   76   76  a00403B 7B08 15     column:     stab  colNumber
+   77   77  a00403E C7                      clrb
+   78   78  a00403F CE08 16                 ldx #Mask
+   79   79                      
+   80   80  a004042 A130        cont:       cmpa  1,x+
+   81   81  a004044 2704                    beq   arr
+   82   82  a004046 CB04                    addb  #Col
+   83   83  a004048 20F8                    bra cont
+   84   84  a00404A FB08 15     arr:        addb  colNumber
+   85   85  a00404D 7B08 14                 stab  pressed
+   86   86                      
+   87   87  a004050 180B F000   return_ISR: movb  #$F0,PortE
+             004054 08         
+   88   88  a004055 0B                      rti    
+   89   89                      
+   90   90                      
+   91   91                      
+   92   92                      
+   93   93                      
+   94   94                      
+   95   95                      
+   96   96                      
+   97   97                      
+   98   98                      
+   99   99                                               
+  100  100                                               
+  101  101                      
+  102  102                      ;**************************************************************
+  103  103                      ;*                 Interrupt Vectors                          *
+  104  104                      ;**************************************************************
+  105  105                                  ORG   $FFFE
+  106  106  a00FFFE 4000                    DC.W  Entry           ; Reset Vector
+  107  107                                  ORG   $FFF2
+  108  108  a00FFF2 4025                    DC.W  KEY_ISR
